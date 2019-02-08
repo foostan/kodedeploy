@@ -533,20 +533,31 @@ tasks:
           --deployment-group-name "${group}" 2>/dev/null
         code=$?
         if [ $code -eq 255 ]; then
+          if [ "${cluster}" == "" ]; then
+            tagset='{
+              "onPremisesTagSetList":[
+                [{"Key":"kodedeployenv","Value":"'${env}'","Type":"KEY_AND_VALUE"}],
+                [{"Key":"kodedeployns","Value":"'${ns}'","Type":"KEY_AND_VALUE"}]
+              ]
+            }'
+          else
+            tagset='{
+              "onPremisesTagSetList":[
+                [{"Key":"kodedeployenv","Value":"'${env}'","Type":"KEY_AND_VALUE"}],
+                [{"Key":"kodedeploycluster","Value":"'${cluster}'","Type":"KEY_AND_VALUE"}],
+                [{"Key":"kodedeployns","Value":"'${ns}'","Type":"KEY_AND_VALUE"}]
+              ]
+            }'
+          fi
           if [ $dryrun == "true" ]; then
             echo "aws deploy created deployment-group \"${group}\" (dry run)"
+            echo on-premisses-tag-set: ${tagset}
           else
             aws deploy create-deployment-group \
               --application-name $app \
               --deployment-group-name "${group}" \
               --service-role-arn "${service_role_arn}" \
-              --on-premises-tag-set '{
-                "onPremisesTagSetList":[
-                  [{"Key":"kodedeployenv","Value":"'${env}'","Type":"KEY_AND_VALUE"}],
-                  [{"Key":"kodedeploycluster","Value":"'${cluster}'","Type":"KEY_AND_VALUE"}],
-                  [{"Key":"kodedeployns","Value":"'${ns}'","Type":"KEY_AND_VALUE"}]
-                ]
-              }' \
+              --on-premises-tag-set "${tagset}" \
               >/dev/null
             if [ $? -ne 0 ]; then
               echo "failed creating \"${group}\"" 1>&2
