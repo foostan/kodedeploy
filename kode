@@ -320,6 +320,42 @@ tasks:
         - *make_cloudwatch_agent_conf
         - *apply
 
+      rollback:
+        mixins:
+          deregister: &deregister |
+            # Avoid the `An error occurred (DeleteConflict) when calling the DeleteUser operation: Cannot delete entity, must delete policies first.` error
+            aws iam list-user-policies --user-name "${instance_name}"
+            aws iam delete-user-policy --user-name "${instance_name}" --policy-name codedeploy-agent
+            aws iam delete-user-policy --user-name "${instance_name}" --policy-name codedeploy-namespace
+
+            # Avoid the `An error occurred (DeleteConflict) when calling the DeleteUser operation: Cannot delete entity, must delete access keys first.` error
+            key_id=$(aws iam list-access-keys --user-name "${instance_name}" | jq -r '.AccessKeyMetadata[].AccessKeyId')
+            aws iam delete-access-key --user-name "${instance_name}" --access-key-id "${key_id}"
+
+            aws deploy deregister-on-premises-instance --instance-name "${instance_name}"
+            aws iam delete-user --user-name "${instance_name}"
+          apply_rollback: &apply_rollback |
+            kubectl --namespace kodedeploy get secret,configmap,pod
+
+            kubectl --namespace kodedeploy delete -f deploy.yaml
+
+            kubectl --namespace kodedeploy delete -f serviceaccount.yaml
+
+            kubectl --namespace kodedeploy delete configmap cloudwatch-agent-conf
+
+            kubectl --namespace kodedeploy delete configmap opt-codedeploy-agent-conf
+
+            kubectl --namespace kodedeploy delete secrets cloudwatch-agent-aws
+
+            kubectl --namespace kodedeploy delete secrets etc-codedeploy-agent-conf
+
+            kubectl --namespace kodedeploy get secret,configmap,pod
+        script:
+          - *check_version
+          - *get_parames
+          - *deregister
+          - *apply_rollback
+
   run:
     parameters:
     - name: namespace
