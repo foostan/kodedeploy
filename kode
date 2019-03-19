@@ -200,6 +200,7 @@ tasks:
           if [ $dryrun == "true" ]; then
             echo "aws deploy \"${instance_name}\" registered (dry run)"
             touch codedeploy.onpremises.yml "${etc_codedeploy_agent_conf_dir}/codedeploy.onpremises.yml"
+            echo "aws iam put-user-policy codedeploy-namespace to ${instance_name} (dry run)"
           else
             aws deploy register \
                 --instance-name ${instance_name} \
@@ -207,6 +208,10 @@ tasks:
                        Key=kodedeploycluster,Value={{ get "cluster" }}\
                        Key=kodedeployns,Value={{ get "namespace" }}
             mv codedeploy.onpremises.yml "${etc_codedeploy_agent_conf_dir}/"
+            aws iam put-user-policy \
+              --user-name ${instance_name} \
+              --policy-name codedeploy-namespace \
+              --policy-document file://codedeploy-namespace.iampolicy.json
           fi
         fi
 
