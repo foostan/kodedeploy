@@ -273,7 +273,7 @@ tasks:
         EOS
 
       apply: &apply |
-       kubectl --dry-run=$dryrun create namespace kodedeploy --dry-run=$dryrun
+        kubectl --dry-run=$dryrun create namespace kodedeploy --dry-run=$dryrun
 
         kubectl --dry-run=$dryrun --namespace kodedeploy \
           create secret generic --from-file=${etc_codedeploy_agent_conf_dir} $(basename $etc_codedeploy_agent_conf_dir)
@@ -286,6 +286,8 @@ tasks:
 
         kubectl --dry-run=$dryrun --namespace kodedeploy \
           create configmap --from-file="${cloudwatch_agent_conf_dir}" $(basename $cloudwatch_agent_conf_dir)
+
+        kubectl --dry-run=$dryrun --namespace kodedeploy apply -f serviceaccount.yaml
 
         kubectl --dry-run=$dryrun --namespace kodedeploy apply -f deploy.yaml
 
