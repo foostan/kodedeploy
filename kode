@@ -100,30 +100,6 @@ tasks:
           aws deploy push --application-name $app --description "test deployment" --ignore-hidden-files --s3-location s3://${bucket}/${key} --source deploy/node
           aws deploy create-deployment --application-name $app --deployment-group-name ${app}-dg --s3-location bucket=${bucket},key=${key},bundleType=zip --target-instances "{\"autoScalingGroups\":[\"${asg}\"]}"
 
-  deregister:
-    parameters:
-    - name: namespace
-      type: string
-      default: ""
-    - name: environment
-      type: string
-    - name: cluster
-      type: string
-      description: "the name of the cluster to deploy the thing. basically use for one-off jobs"
-      default: ""
-    script: |
-      user="{{ get "environment" }}-{{ get "namespace" }}-{{ get "cluster" }}"
-
-      # Avoid the `An error occurred (DeleteConflict) when calling the DeleteUser operation: Cannot delete entity, must delete policies first.` error
-      aws iam list-user-policies --user-name "${user}"
-      aws iam delete-user-policy --user-name "${user}" --policy-name codedeploy-agent
-
-      # Avoid the `An error occurred (DeleteConflict) when calling the DeleteUser operation: Cannot delete entity, must delete access keys first.` error
-      key_id=$(aws iam list-access-keys --user-name "${user}" | jq -r '.AccessKeyMetadata[].AccessKeyId')
-      aws iam delete-access-key --user-name "${user}" --access-key-id "${key_id}"
-
-      aws deploy deregister-on-premises-instance --instance-name "${user}"
-      aws iam delete-user --user-name "${user}"
   logs:
     parameters:
     - name: application
