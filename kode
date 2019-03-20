@@ -201,11 +201,12 @@ tasks:
             echo "aws deploy \"${instance_name}\" registered (dry run)"
             touch codedeploy.onpremises.yml "${etc_codedeploy_agent_conf_dir}/codedeploy.onpremises.yml"
           else
+            # include credentials in stdout, so redirect to /dev/null
             aws deploy register \
                 --instance-name ${instance_name} \
                 --tags Key=kodedeployenv,Value={{ get "environment" }}\
                        Key=kodedeploycluster,Value={{ get "cluster" }}\
-                       Key=kodedeployns,Value={{ get "namespace" }}
+                       Key=kodedeployns,Value={{ get "namespace" }} > /dev/null
             mv codedeploy.onpremises.yml "${etc_codedeploy_agent_conf_dir}/"
           fi
         fi
